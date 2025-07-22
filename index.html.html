@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Romantic Rain Effect with Birthday Card</title>
+    <link rel="icon" type="image/svg+xml" href="https://www.svgrepo.com/show/444265/birthday-cake.svg" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlalHpgXqQ1aF/L03fF+e3vV4b+j3Kj6D8z6Q+2I+v4y8a5o3R+6O4z/C1/i7gS2aC+8+Q+g8Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        /* --- General Body Styles --- */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrollbars */
+            font-family: 'Arial', sans-serif;
+            background-color: #000; /* Default dark background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* --- Intro Scene Styles --- */
+        #intro {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 1;
+            transition: opacity 2s ease-in-out;
+        }
+
+        #intro.fade-out {
+            opacity: 0;
+            pointer-events: none; /* Disable interactions after fading out */
+        }
+
+        #intro-text-container {
+            color: #fff;
+            font-size: 2.5rem;
+            text-align: center;
+            width: 80%;
+            max-width: 800px;
+        }
+
+        .message {
+            display: none;
+            overflow: hidden;
+            white-space: nowrap;
+            margin: 0 auto;
+            border-right: 2px solid #fff;
+            width: 0;
+        }
+
+        .typing {
+            display: block;
+            animation: typing 2s steps(40, end) forwards, blink-caret .75s step-end infinite;
+        }
+
+        .visible {
+            display: block;
+            width: auto;
+            border-right: none;
+            animation: none;
+        }
+
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: #fff }
+        }
+
+        /* --- Rain Canvas Styles --- */
+        #rainCanvas {
+            position: fixed; /* Fixed to cover the whole viewport */
+            top: 0;
+            left: 0;
+            /* Updated background to the provided image */
+            background-image: url('https://storage.googleapis.com/gemini-generated-images/images/d0dda46e-34ff-4ea0-aaa2-57afeb3ef2be/image_4f1658.png');
+            background-size: cover;
+            background-position: center;
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            filter: brightness(1.15) hue-rotate(190deg) saturate(1.5); /* Kept for rain effect */
+            opacity: 0;
+            transition: opacity 3s ease-in-out;
+            z-index: 1; /* Below intro, but above card when card appears */
+        }
+
+        #rainCanvas.fade-in {
+            opacity: 1;
+        }
+
+        /* --- Birthday Card Styles --- */
+        /* --- Fonts and Base Styles --- */
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Great+Vibes&family=Cinzel:wght@400;600;700&display=swap');
+        
+        #card-wrapper {
+            position: absolute; /* Positioned over the rain canvas */
+            opacity: 0; /* Initially hidden */
+            transition: opacity 2s ease-in-out; /* Fade in animation */
+            z-index: 5; /* Above rain canvas */
+            width: 350px; /* Match card-container width */
+            height: 550px; /* Match card-container height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-container {
+            width: 100%; /* Make it fill the wrapper */
+            height: 100%; /* Make it fill the wrapper */
+            position: relative;
+            perspective: 1500px; /* For 3D effect */
+        }
+
+        .birthday-card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1.5s cubic-bezier(0.23, 1, 0.32, 1);
+            transform-origin: left center; /* Fold from the left */
+            border-radius: 20px; /* Apply to the main container for overall rounded corners */
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Base styles for all card pages */
+        .card-page {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden; /* Hide back of the page when flipped */
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px 25px;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            top: 0;
+            left: 0;
+            /* Card background is now opaque */
+            background: linear-gradient(135deg, #1A0033 0%, #2D1B69 25%, #8B5CC2 50%, #A855F7 75%, #C084FC 100%); /* Original purple gradient */
+            backdrop-filter: none; /* No blur needed if not transparent */
+        }
+
+        /* Front cover retains its specific gradient for consistency */
+        .front-cover {
+            background: linear-gradient(135deg, rgba(26, 0, 51, 1) 0%, rgba(45, 27, 105, 1) 25%, rgba(139, 92, 246, 1) 50%, rgba(168, 85, 247, 1) 75%, rgba(192, 132, 252, 1) 100%);
+            position: relative;
+            overflow: hidden;
+            transform-origin: left center;
+        }
+        .front-cover::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 20%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(255, 105, 180, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        /* Inner pages (page 2, page 3, page 4) use a light, opaque background */
+        .page-2,
+        .page-3,
+        .page-4 {
+            background: #FEF7E0; /* Solid light yellow/cream background */
+        }
+
+        /* --- Folding States --- */
+        /* Initial state: front cover visible */
+        .birthday-card[data-state="closed"] .front-cover {
+            transform: rotateY(0deg);
+            z-index: 5;
+        }
+        .birthday-card[data-state="closed"] .page-2,
+        .birthday-card[data-state="closed"] .page-3,
+        .birthday-card[data-state="closed"] .page-4 {
+            transform: rotateY(180deg);
+            z-index: 1;
+            opacity: 0;
+        } /* Keep them hidden */
+
+        /* First open state: reveals page 2 */
+        .birthday-card[data-state="page2"] .front-cover {
+            transform: rotateY(-180deg);
+            z-index: 5;
+        } /* Front cover flips back */
+        .birthday-card[data-state="page2"] .page-2 {
+            transform: rotateY(0deg);
+            z-index: 4;
+            opacity: 1;
+        } /* Page 2 is visible */
+        .birthday-card[data-state="page2"] .page-3 {
+            transform: rotateY(180deg);
+            z-index: 3;
+            opacity: 0;
+        } /* Page 3 still hidden */
+        .birthday-card[data-state="page2"] .page-4 {
+            transform: rotateY(180deg);
+            z-index: 2;
+            opacity: 0;
+        } /* Page 4 still hidden */
+
+        /* Second open state: reveals page 3 */
+        .birthday-card[data-state="page3"] .front-cover {
+            transform: rotateY(-180deg);
+            z-index: 5;
+        }
+        .birthday-card[data-state="page3"] .page-2 {
+            transform: rotateY(-180deg);
+            z-index: 4;
+        } /* Page 2 flips back */
+        .birthday-card[data-state="page3"] .page-3 {
+            transform: rotateY(0deg);
+            z-index: 6;
+            opacity: 1;
+        } /* Page 3 becomes visible */
+        .birthday-card[data-state="page3"] .page-4 {
+            transform: rotateY(180deg);
+            z-index: 2;
+            opacity: 0;
+        } /* Page 4 still hidden */
+
+        /* Final open state: reveals page 4 */
+        .birthday-card[data-state="page4"] .front-cover {
+            transform: rotateY(-180deg);
+            z-index: 5;
+        }
+        .birthday-card[data-state="page4"] .page-2 {
+            transform: rotateY(-180deg);
+            z-index: 4;
+        } /* Page 2 flips back */
+        .birthday-card[data-state="page4"] .page-3 {
+            transform: rotateY(-180deg);
+            z-index: 3;
+        } /* Page 3 flips back */
+        .birthday-card[data-state="page4"] .page-4 {
+            transform: rotateY(0deg);
+            z-index: 7;
+            opacity: 1;
+        } /* Page 4 becomes visible */
+
+        /* --- Front Cover Specifics --- */
+        .title-container {
+            text-align: center;
+            margin-bottom: 60px;
+            z-index: 10;
+        }
+        .main-title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 2.8rem;
+            font-weight: 400;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.3);
+            line-height: 1.2;
+            animation: title-glow 3s ease-in-out infinite alternate;
+        }
+        .star-text {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 3.2rem;
+            margin: 10px 0;
+            color: #fff;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.8), 0 0 60px rgba(255, 215, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+        .star-icon {
+            color: #ffd700;
+            animation: star-twinkle 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.8));
+        }
+
+        /* --- Front Cover Decorations --- */
+        .fireworks-container,
+        .bunting-container,
+        .hearts-container,
+        .golden-balloons-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+        .firework {
+            position: absolute;
+            color: #ffd700;
+            animation: firework-burst 3s ease-in-out infinite;
+        }
+        .firework-1 { top: 15%; left: 20%; animation-delay: 0s; }
+        .firework-2 { top: 25%; right: 15%; animation-delay: 1s; }
+        .firework-3 { top: 45%; left: 10%; animation-delay: 2s; }
+        .firework-4 { top: 35%; right: 25%; animation-delay: 0.5s; }
+        .firework-5 { bottom: 30%; left: 25%; animation-delay: 1.5s; }
+        .firework-6 { bottom: 20%; right: 20%; animation-delay: 2.5s; }
+        .bunting-flag {
+            position: absolute;
+            top: 0;
+            width: 25px;
+            height: 35px;
+            clip-path: polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%);
+            animation: bunting-wave 2s ease-in-out infinite;
+        }
+        .bunting-1 { left: 10%; background: linear-gradient(135deg, #ff6b9d, #c44569); animation-delay: 0s; }
+        .bunting-2 { left: 25%; background: linear-gradient(135deg, #ffd700, #f39c12); animation-delay: 0.2s; }
+        .bunting-3 { left: 40%; background: linear-gradient(135deg, #ff9ff3, #f368e0); animation-delay: 0.4s; }
+        .bunting-4 { left: 55%; background: linear-gradient(135deg, #54a0ff, #2e86de); animation-delay: 0.6s; }
+        .bunting-5 { left: 70%; background: linear-gradient(135deg, #5f27cd, #341f97); animation-delay: 0.8s; }
+        .bunting-6 { left: 85%; background: linear-gradient(135deg, #00d2d3, #01a3a4); animation-delay: 1s; }
+
+        /* Golden Balloons */
+        .golden-balloon {
+            position: absolute;
+            width: 40px;
+            height: 55px;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            background: linear-gradient(135deg, #ffd700, #daa520, #b8860b); /* Golden gradient */
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+            animation: float-balloon 4s ease-in-out infinite;
+        }
+        .golden-balloon::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 1px;
+            height: 25px;
+            background: rgba(255, 255, 255, 0.5); /* String */
+        }
+        .gb-1 { top: 50px; left: 20px; animation-delay: 0s; }
+        .gb-2 { top: 100px; right: 25px; animation-delay: 1s; }
+        .gb-3 { bottom: 80px; left: 30px; animation-delay: 2s; }
+        .gb-4 { bottom: 130px; right: 15px; animation-delay: 1.5s; }
+
+        .floating-heart {
+            position: absolute;
+            color: #ff69b4;
+            animation: float-heart 6s ease-in-out infinite;
+            opacity: 0.7;
+        }
+        .heart-1 { top: 20%; left: 15%; animation-delay: 0s; }
+        .heart-2 { top: 30%; right: 10%; animation-delay: 1.2s; }
+        .heart-3 { bottom: 35%; left: 20%; animation-delay: 2.4s; }
+        .heart-4 { bottom: 25%; right: 15%; animation-delay: 3.6s; }
+        .heart-5 { top: 60%; left: 50%; animation-delay: 4.8s; }
+
+        /* Open Button */
+        .open-indicator {
+            position: absolute;
+            top: 50%; /* Center vertically */
+            right: 30px;
+            transform: translateY(-50%); /* Adjust for vertical centering */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+        .open-indicator:hover {
+            transform: translateY(-50%) scale(1.1);
+        } /* Maintain vertical center on hover */
+        .arrow-container {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 0 4px 15px rgba(0, 0, 0, 0.3);
+            animation: heartbeat-glow 2s ease-in-out infinite;
+            margin-bottom: 8px;
+        }
+        .arrow-icon {
+            color: #fff;
+            animation: arrow-pulse 1.5s ease-in-out infinite;
+        }
+        .open-text {
+            color: #ffd700;
+            font-family: 'Playfair Display', serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* --- Inner Pages (Page 2, Page 3, Page 4) --- */
+        .page-decorations {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+        .mini-balloon {
+            position: absolute;
+            width: 20px;
+            height: 25px;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            animation: mini-float 3s ease-in-out infinite;
+        }
+        .mb-1 { background: linear-gradient(135deg, #ff6b9d, #c44569); top: 80px; left: 20px; animation-delay: 0s; }
+        .mb-2 { background: linear-gradient(135deg, #ffd700, #f39c12); top: 90px; right: 25px; animation-delay: 1s; }
+        .mb-3 { background: linear-gradient(135deg, #54a0ff, #2e86de); top: 85px; left: 25px; animation-delay: 0.5s; }
+        .mb-4 { background: linear-gradient(135deg, #5f27cd, #341f97); top: 95px; right: 20px; animation-delay: 1.5s; }
+        .mini-firework {
+            position: absolute;
+            color: #ffd700;
+            animation: mini-sparkle 2s ease-in-out infinite;
+        }
+        .mf-1 { bottom: 40px; left: 30px; animation-delay: 0s; }
+        .mf-2 { bottom: 60px; right: 35px; animation-delay: 1s; }
+        .mf-3 { bottom: 50px; left: 35px; animation-delay: 0.5s; }
+        .mf-4 { bottom: 45px; right: 30px; animation-delay: 1.5s; }
+        .page-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: #8b1538;
+            text-align: center;
+            margin-bottom: 25px;
+            text-shadow: 0 2px 4px rgba(139, 21, 56, 0.2);
+        }
+        .photo-gallery {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 280px;
+            align-items: center;
+        }
+        .photo-frame {
+            position: relative;
+            width: 200px;
+            height: 120px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transform-origin: center;
+        }
+        .photo-frame:hover {
+            transform: scale(1.05) rotate(0deg);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25), 0 5px 15px rgba(0, 0, 0, 0.15);
+            z-index: 10;
+        }
+        .frame-1 { transform: rotate(-2deg); }
+        .frame-2 { transform: rotate(1deg); }
+        .frame-3 { transform: rotate(-1deg); }
+        .frame-4 { transform: rotate(2deg); } /* Added for new frames */
+        .frame-5 { transform: rotate(-3deg); } /* Added for new frames */
+        .photo-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: sepia(5%) saturate(1.1) contrast(1.05) brightness(1.02);
+            transition: filter 0.3s ease;
+        }
+        .photo-frame:hover img {
+            filter: sepia(0%) saturate(1.2) contrast(1.1) brightness(1.05);
+        }
+        .tape {
+            position: absolute;
+            width: 35px;
+            height: 18px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 248, 248, 0.8) 50%, rgba(240, 240, 240, 0.7) 100%);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.8);
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+        .tape::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 1px;
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .tape-top-right { top: -9px; right: -9px; transform: rotate(-25deg); }
+        .tape-bottom-left { bottom: -9px; left: -9px; transform: rotate(-25deg); }
+        .photo-frame:hover .tape {
+            transform: rotate(-25deg) scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 3px rgba(255, 255, 255, 0.9);
+        }
+
+        /* Navigation Buttons */
+        .nav-btn {
+            background: linear-gradient(135deg, #c7205c, #8b1538);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-family: 'Playfair Display', serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 21, 56, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 30px;
+        }
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(139, 21, 56, 0.4);
+        }
+
+        /* --- Final Page (Page 4) --- */
+        .message-decorations {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+        .deco-heart,
+        .deco-star {
+            position: absolute;
+            animation: gentle-float 4s ease-in-out infinite;
+        }
+        .dh-1 { color: #ff69b4; top: 30px; left: 30px; animation-delay: 0s; }
+        .dh-2 { color: #ff1493; bottom: 40px; right: 30px; animation-delay: 2s; }
+        .ds-1 { color: #ffd700; top: 40px; right: 40px; animation-delay: 1s; }
+        .ds-2 { color: #ff8c00; bottom: 50px; left: 40px; animation-delay: 3s; }
+        .message-container {
+            width: 100%;
+            max-width: 280px;
+            margin: 0 auto; /* Centered content */
+            padding: 10px; /* Added padding to container */
+            text-align: center;
+        }
+        .message-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.8rem;
+            font-weight: 700; /* Increased font weight */
+            color: #8b1538;
+            margin: 10px 0 20px; /* Adjusted margins */
+            text-shadow: 0 2px 4px rgba(139, 21, 56, 0.2);
+        }
+        .message-text {
+            font-family: 'Playfair Display', serif;
+            color: #5a4a3a;
+            font-size: 0.95rem; /* Slightly larger font */
+            line-height: 1.6; /* Improved readability */
+            margin-bottom: 20px;
+        }
+        .birthday-wish {
+            font-family: 'Great Vibes', cursive; /* Changed to Great Vibes */
+            font-size: 1.8rem; /* Increased size */
+            color: #c7205c;
+            margin: 15px 0; /* Adjusted margin */
+            text-shadow: 0 1px 3px rgba(199, 32, 92, 0.3);
+        }
+        .quotes-section {
+            margin: 25px 0;
+        } /* Adjusted margin */
+        .quote {
+            font-family: 'Playfair Display', italic; /* Specified italic font family */
+            font-size: 0.85rem; /* Slightly smaller font */
+            line-height: 1.5;
+            color: white; /* Changed text color to white */
+            margin: 15px 0; /* Adjusted margin */
+            padding: 10px; /* Adjusted padding */
+            background: linear-gradient(135deg, rgba(106, 17, 203, 1) 0%, rgba(37, 117, 252, 1) 100%); /* Original purple and dark blue gradient, now opaque */
+            border-radius: 8px;
+            border-left: 3px solid #ffd700;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            backdrop-filter: none; /* No blur needed if not transparent */
+        }
+        .signature {
+            margin-top: 20px; /* Adjusted margin */
+            text-align: center;
+            font-family: 'Dancing Script', cursive; /* Added font family */
+        }
+        .signature p {
+            color: #8b1538;
+            font-size: 1.1rem; /* Slightly larger font */
+            margin-bottom: 5px;
+        }
+        .signature-name {
+            font-size: 1.4rem; /* Slightly larger font */
+            font-weight: 600; /* Added font weight */
+            color: #c7205c;
+            margin-top: 5px; /* Added margin */
+        }
+        #close-btn {
+            /* Specific styles for close button */
+            margin: 10px auto; /* Centered and adjusted margin */
+            position: relative; /* Changed from absolute to relative for flow */
+            bottom: 10px; /* Adjusted for relative positioning */
+            background: linear-gradient(135deg, #8b1538, #c7205c);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-family: 'Playfair Display', serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 21, 56, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 10;
+        }
+        #close-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(139, 21, 56, 0.4);
+        }
+
+        /* --- Animations --- */
+        @keyframes firework-burst {
+            0%, 100% { opacity: 0.3; transform: scale(1) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1.3) rotate(180deg); }
+        }
+        @keyframes bunting-wave {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-5px) rotate(2deg); }
+        }
+        @keyframes float-balloon {
+            0%, 100% { transform: translateY(0px) rotate(-2deg); }
+            33% { transform: translateY(-15px) rotate(1deg); }
+            66% { transform: translateY(-8px) rotate(-1deg); }
+        }
+        @keyframes title-glow {
+            0% { text-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.3); }
+            100% { text-shadow: 0 0 30px rgba(255, 215, 0, 1), 0 0 60px rgba(255, 215, 0, 0.8), 0 4px 12px rgba(0, 0, 0, 0.4); }
+        }
+        @keyframes star-twinkle {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.8; }
+            25% { transform: scale(1.2) rotate(90deg); opacity: 1; }
+            50% { transform: scale(1.1) rotate(180deg); opacity: 0.9; }
+            75% { transform: scale(1.3) rotate(270deg); opacity: 1; }
+        }
+        @keyframes float-heart {
+            0%, 100% { transform: translateY(0px) scale(1); opacity: 0.7; }
+            50% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+        }
+        @keyframes heartbeat-glow {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 0 4px 15px rgba(0, 0, 0, 0.3); }
+            50% { transform: scale(1.1); box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 6px 20px rgba(0, 0, 0, 0.4); }
+        }
+        @keyframes arrow-pulse {
+            0%, 100% { transform: translateX(0px); }
+            50% { transform: translateX(3px); }
+        }
+        @keyframes mini-float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        @keyframes mini-sparkle {
+            0%, 100% { opacity: 0.5; transform: scale(1) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
+        }
+        @keyframes gentle-float {
+            0%, 100% { transform: translateY(0px); opacity: 0.6; }
+            50% { transform: translateY(-10px); opacity: 1; }
+        }
+
+        /* --- Responsive Design --- */
+        @media (max-width: 480px) {
+            .card-container { width: 320px; height: 500px; }
+            .main-title { font-size: 2.2rem; }
+            .star-text { font-size: 2.6rem; }
+            .card-content { padding: 25px 20px; }
+            .photo-frame { width: 180px; height: 100px; }
+            .message-text { font-size: 0.85rem; }
+            .quote { font-size: 0.8rem; padding: 8px 12px; }
+            #intro-text-container { font-size: 1.8rem; }
+        }
+        @media (max-width: 360px) {
+            .card-container { width: 280px; height: 450px; }
+            .main-title { font-size: 1.8rem; }
+            .star-text { font-size: 2.2rem; }
+            .photo-frame { width: 160px; height: 90px; }
+            #intro-text-container { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div id="intro">
+        <div id="intro-text-container">
+            <div id="message1" class="message">Hey, I know you like something.........</div>
+            <div id="message2" class="message">Wanna see it..........</div>
+            <div id="message3" class="message">Here you go!!!!!!!!</div>
+        </div>
+    </div>
+    
+    <canvas id="rainCanvas"></canvas>
+
+    <div id="card-wrapper">
+        <div class="card-container">
+            <div class="birthday-card" id="birthday-card" data-state="closed">
+                <div class="card-page front-cover">
+                    <div class="fireworks-container">
+                        <i class="fas fa-firework firework firework-1"></i>
+                        <i class="fas fa-firework firework firework-2"></i>
+                        <i class="fas fa-firework firework firework-3"></i>
+                        <i class="fas fa-firework firework firework-4"></i>
+                        <i class="fas fa-firework firework firework-5"></i>
+                        <i class="fas fa-firework firework firework-6"></i>
+                    </div>
+                    <div class="bunting-container">
+                        <i class="bunting-flag bunting-1"></i>
+                        <i class="bunting-flag bunting-2"></i>
+                        <i class="bunting-flag bunting-3"></i>
+                        <i class="bunting-flag bunting-4"></i>
+                        <i class="bunting-flag bunting-5"></i>
+                        <i class="bunting-flag bunting-6"></i>
+                    </div>
+                    <div class="golden-balloons-container">
+                        <i class="golden-balloon gb-1"></i>
+                        <i class="golden-balloon gb-2"></i>
+                        <i class="golden-balloon gb-3"></i>
+                        <i class="golden-balloon gb-4"></i>
+                    </div>
+                    <div class="hearts-container">
+                        <i class="fas fa-heart floating-heart heart-1"></i>
+                        <i class="fas fa-heart floating-heart heart-2"></i>
+                        <i class="fas fa-heart floating-heart heart-3"></i>
+                        <i class="fas fa-heart floating-heart heart-4"></i>
+                        <i class="fas fa-heart floating-heart heart-5"></i>
+                    </div>
+                    <div class="card-content">
+                        <div class="title-container">
+                            <h1 class="main-title">Happy Birthday</h1>
+                            <div class="star-text">
+                                <i class="fas fa-star star-icon"></i>
+                                <span>Star</span>
+                                <i class="fas fa-star star-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="open-indicator" id="open-btn">
+                        <div class="arrow-container">
+                            <i class="fas fa-arrow-right arrow-icon"></i>
+                        </div>
+                        <p class="open-text">Open me!</p>
+                    </div>
+                </div>
+
+                <div class="card-page page-2">
+                    <div class="page-decorations">
+                        <i class="mini-balloon mb-1"></i>
+                        <i class="mini-balloon mb-2"></i>
+                        <i class="mini-balloon mb-3"></i>
+                        <i class="mini-balloon mb-4"></i>
+                        <i class="mini-firework mf-1"></i>
+                        <i class="mini-firework mf-2"></i>
+                        <i class="mini-firework mf-3"></i>
+                        <i class="mini-firework mf-4"></i>
+                    </div>
+                    <h2 class="page-title">Happy Birthday Maha</h2>
+                    <div class="photo-gallery">
+                        <div class="photo-frame frame-1">
+                            <img src="https://i.ibb.co/r2MCLKF8/1.jpg" alt="Happy Birthday Maha 1" />
+                            <span class="tape tape-top-right"></span>
+                        </div>
+                        <div class="photo-frame frame-2">
+                            <img src="https://i.ibb.co/rRN3KcZ7/2.jpg" alt="Happy Birthday Maha 2" />
+                            <span class="tape tape-bottom-left"></span>
+                        </div>
+                        <div class="photo-frame frame-3">
+                            <img src="https://i.ibb.co/4nPrH0SJ/3.jpg" alt="Happy Birthday Maha 3" />
+                            <span class="tape tape-top-right"></span>
+                        </div>
+                    </div>
+                    <button class="nav-btn" id="next-btn-1">
+                        <i class="fas fa-arrow-right"></i>
+                        Next Page
+                    </button>
+                </div>
+
+                <div class="card-page page-3">
+                    <div class="page-decorations">
+                        <i class="mini-balloon mb-1"></i>
+                        <i class="mini-balloon mb-2"></i>
+                        <i class="mini-firework mf-1"></i>
+                        <i class="mini-firework mf-2"></i>
+                    </div>
+                    <h2 class="page-title">More Surprises Inside!</h2>
+                    <div class="photo-gallery">
+                        <div class="photo-frame frame-4">
+                            <img src="https://i.ibb.co/8LxNdxjM/5.jpg" alt="Surprise image 1" />
+                            <span class="tape tape-top-right"></span>
+                        </div>
+                        <div class="photo-frame frame-5">
+                            <img src="https://i.ibb.co/h14sVJdF/6.jpg" alt="Surprise image 2" />
+                            <span class="tape tape-bottom-left"></span>
+                        </div>
+                    </div>
+                    <p style="font-family: 'Playfair Display', serif; text-align: center; color: #5a4a3a; font-size: 0.9em; margin-top: 20px;">
+                        Click below to reveal a special message.
+                    </p>
+                    <button class="nav-btn" id="next-btn-2">
+                        <i class="fas fa-envelope-open-text"></i>
+                        Read Message
+                    </button>
+                </div>
+
+                <div class="card-page page-4">
+                    <div class="message-decorations">
+                        <i class="fas fa-heart deco-heart dh-1"></i>
+                        <i class="fas fa-heart deco-heart dh-2"></i>
+                        <i class="fas fa-star deco-star ds-1"></i>
+                        <i class="fas fa-star deco-star ds-2"></i>
+                    </div>
+                    <div class="message-container">
+                        <h2 class="message-title">FOR YOU</h2>
+                        <div class="message-text">
+                            <p class="birthday-wish">Happy Birthday!</p>
+                            <p>
+                                I hope you like these little efforts I crafted just for you 🤭 Wishing you all the best in everything you do. May Allah bless you with everything you've ever envisioned.
+                                Allah Hafiz! 🌸
+                            </p>
+
+                            <div class="quotes-section">
+                                <p class="quote">🕊️ "Some moments are made of silence, and remembered forever."<br />- Giovanna Fletcher</p>
+                                <p class="quote">✨ "Time doesn't erase what the soul quietly holds."<br />- Lang Leav</p>
+                            </div>
+                        </div>
+                        <div class="signature">
+                            <p>Good byee!!</p>
+                            <p class="signature-name">Your Fiance</p>
+                        </div>
+                    </div>
+                    <button class="nav-btn" id="close-btn">
+                        <i class="fas fa-times"></i>
+                        Close Card
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Intro Sequence Script ---
+        const intro = document.getElementById('intro');
+        const message1 = document.getElementById('message1');
+        const message2 = document.getElementById('message2');
+        const message3 = document.getElementById('message3');
+        const rainCanvas = document.getElementById('rainCanvas');
+        const cardWrapper = document.getElementById('card-wrapper'); // New reference for the card container
+
+        function showMessages() {
+            message1.classList.add('typing');
+            
+            setTimeout(() => {
+                message1.classList.remove('typing');
+                message1.classList.add('visible');
+                
+                setTimeout(() => {
+                    message1.classList.remove('visible');
+                    message2.classList.add('typing');
+                    
+                    setTimeout(() => {
+                        message2.classList.remove('typing');
+                        message2.classList.add('visible');
+                        
+                        setTimeout(() => {
+                            message2.classList.remove('visible');
+                            message3.classList.add('typing');
+                            
+                            setTimeout(() => {
+                                message3.classList.remove('typing');
+                                message3.classList.add('visible');
+                                
+                                setTimeout(() => {
+                                    intro.classList.add('fade-out'); // Fade out intro
+                                    
+                                    setTimeout(() => {
+                                        rainCanvas.classList.add('fade-in'); // Fade in rain canvas
+                                        startRainEffect(); // Start rain effect
+
+                                        // After 6-8 seconds, fade in the birthday card
+                                        const delay = Math.random() * 2000 + 6000; // 6 to 8 seconds
+                                        setTimeout(() => {
+                                            cardWrapper.style.opacity = '1'; // Make card visible
+                                        }, delay);
+
+                                    }, 500); // Small delay before rain canvas starts fading in
+                                }, 3000); // Visible duration for message 3
+                            }, 2000); // Typing duration for message 3
+                        }, 3000); // Visible duration for message 2
+                    }, 2000); // Typing duration for message 2
+                }, 3000); // Visible duration for message 1
+            }, 2000); // Typing duration for message 1
+        }
+        
+        setTimeout(showMessages, 500); // Start the message sequence after short delay
+
+        // --- Rain Effect Code ---
+        function startRainEffect() {
+            const canvas = document.getElementById('rainCanvas');
+            const ctx = canvas.getContext('2d');
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            let startTime = null;
+            const fadeDuration = 5000; // Duration for rain intensity to reach full
+
+            class FallingDroplet {
+                constructor() {
+                    this.reset();
+                }
+
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = -Math.random() * canvas.height * 2;
+                    this.length = Math.random() * 40 + 30;
+                    this.speed = Math.random() * 35 + 25;
+                    this.baseOpacity = Math.random() * 0.5 + 0.3;
+                }
+
+                update() {
+                    this.y += this.speed;
+                    if (this.y > canvas.height + this.length) {
+                        this.reset();
+                    }
+                }
+
+                draw(globalIntensity) {
+                    const currentOpacity = this.baseOpacity * globalIntensity;
+                    if (currentOpacity <= 0) return;
+
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(200, 230, 255, ${currentOpacity})`;
+                    ctx.lineWidth = 2.5;
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.x, this.y + this.length);
+                    ctx.stroke();
+                }
+            }
+
+            class Drip {
+                constructor() {
+                    this.reset();
+                }
+
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = -Math.random() * canvas.height * 0.5;
+                    this.speed = Math.random() * 8 + 4;
+                    this.size = Math.random() * 3 + 1.5;
+                    this.trail = [];
+                    this.maxTrailLength = Math.floor(Math.random() * 100 + 70);
+                    this.trailFadeSpeed = 0.0025;
+                    this.active = true;
+                    this.baseDripHeadOpacity = 0.9;
+                    this.baseTrailOpacity = 0.5;
+                    this.isZigzag = Math.random() < 0.2;
+                    
+                    if (this.isZigzag) {
+                        this.zigzagAmplitude = (Math.random() * 0.6 + 0.2);
+                        this.zigzagFrequency = (Math.random() * 0.05 + 0.03);
+                        this.initialX = this.x;
+                    }
+                }
+
+                update() {
+                    if (!this.active) return;
+                    this.y += this.speed;
+
+                    if (this.isZigzag) {
+                        this.x = this.initialX + Math.sin(this.y * this.zigzagFrequency) * this.zigzagAmplitude;
+                    }
+
+                    this.trail.push({ x: this.x, y: this.y, opacity: 1 });
+
+                    if (this.trail.length > this.maxTrailLength) {
+                        this.trail.shift();
+                    }
+
+                    if (this.y > canvas.height + this.size) {
+                        this.active = false;
+                    }
+                }
+
+                draw(globalIntensity) {
+                    ctx.beginPath();
+                    ctx.lineWidth = this.size * 1.2;
+                    ctx.lineCap = 'round';
+
+                    for (let i = 0; i < this.trail.length - 1; i++) {
+                        const p1 = this.trail[i];
+                        const p2 = this.trail[i + 1];
+                        let trailSegmentOpacity = p1.opacity * (1 - (i / this.trail.length)) * this.baseTrailOpacity * globalIntensity;
+                        if (trailSegmentOpacity <= 0) continue;
+
+                        ctx.strokeStyle = `rgba(180, 220, 255, ${trailSegmentOpacity})`;
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.stroke();
+                    }
+
+                    if (this.active) {
+                        const dripHeadOpacity = this.baseDripHeadOpacity * globalIntensity;
+                        if (dripHeadOpacity <= 0) return;
+
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(220, 240, 255, ${dripHeadOpacity})`;
+                        ctx.fill();
+                    }
+                }
+            }
+
+            class PersistentWetLine {
+                constructor(x, yStart, yEnd, width, initialGlobalIntensity) {
+                    this.x = x;
+                    this.yStart = yStart;
+                    this.yEnd = yEnd;
+                    this.width = width;
+                    this.opacity = initialGlobalIntensity * 0.6;
+                    this.fadeSpeed = 0.001;
+                }
+
+                update() {
+                    this.opacity -= this.fadeSpeed;
+                    if (this.opacity <= 0) {
+                        return false;
+                    }
+                    return true;
+                }
+
+                draw() {
+                    if (this.opacity <= 0) return;
+
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(180, 220, 255, ${this.opacity})`;
+                    ctx.lineWidth = this.width * 1.0;
+                    ctx.lineCap = 'round';
+                    ctx.moveTo(this.x, this.yStart);
+                    ctx.lineTo(this.x, this.yEnd);
+                    ctx.stroke();
+                }
+            }
+
+            class BokehEffect {
+                constructor() {
+                    this.reset();
+                }
+
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.initialRadius = Math.random() * 30 + 25;
+                    this.radius = 0;
+                    this.opacity = 0;
+                    this.targetOpacity = Math.random() * 0.65 + 0.35;
+                    this.fadeSpeed = Math.random() * 0.002 + 0.0008;
+                    this.state = 'appearing';
+                    this.moveX = (Math.random() - 0.5) * 0.08;
+                    this.moveY = (Math.random() - 0.5) * 0.4;
+                    this.lifeTime = Math.random() * 700 + 600;
+                    this.currentLife = 0;
+                    this.blur = Math.random() * 10 + 8;
+                    this.growSpeed = (this.initialRadius / (this.lifeTime * 0.2));
+                    this.shrinkSpeed = (this.initialRadius / (this.lifeTime * 0.2));
+                }
+
+                update() {
+                    if (this.state === 'appearing') {
+                        this.opacity += this.fadeSpeed;
+                        this.radius += this.growSpeed;
+                        if (this.opacity >= this.targetOpacity || this.radius >= this.initialRadius) {
+                            this.opacity = this.targetOpacity;
+                            this.radius = this.initialRadius;
+                            this.state = 'visible';
+                        }
+                    } else if (this.state === 'visible') {
+                        this.currentLife++;
+                        if (this.currentLife >= this.lifeTime) {
+                            this.state = 'disappearing';
+                        }
+                    } else if (this.state === 'disappearing') {
+                        this.opacity -= this.fadeSpeed;
+                        this.radius -= this.shrinkSpeed;
+                        if (this.opacity <= 0 || this.radius <= 0) {
+                            this.reset();
+                        }
+                    }
+
+                    this.x += this.moveX;
+                    this.y += this.moveY;
+
+                    if (this.x < 0 || this.x > canvas.width) this.moveX *= -1;
+                    if (this.y < 0 || this.y > canvas.height) this.moveY *= -1;
+                }
+
+                draw() {
+                    if (this.opacity <= 0) return;
+
+                    ctx.filter = `blur(${this.blur}px)`;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+
+                    const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+                    gradient.addColorStop(0, `rgba(255, 255, 255, ${this.opacity * 0.99})`);
+                    gradient.addColorStop(0.7, `rgba(255, 255, 255, ${this.opacity * 0.85})`);
+                    gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+
+                    ctx.fillStyle = gradient;
+                    ctx.fill();
+                    ctx.filter = 'none';
+                }
+            }
+
+            const fallingDroplets = [];
+            const drips = [];
+            const persistentWetLines = [];
+            const bokehEffects = [];
+
+            const numberOfFallingDroplets = 80;
+            const numberOfDrips = 5;
+            const numberOfBokehEffects = 50;
+
+            for (let i = 0; i < numberOfFallingDroplets; i++) {
+                fallingDroplets.push(new FallingDroplet());
+            }
+
+            for (let i = 0; i < numberOfDrips; i++) {
+                drips.push(new Drip());
+            }
+
+            for (let i = 0; i < numberOfBokehEffects; i++) {
+                bokehEffects.push(new BokehEffect());
+            }
+
+            function animate(currentTime) {
+                if (!startTime) {
+                    startTime = currentTime;
+                }
+
+                const elapsedTime = currentTime - startTime;
+                const globalRainIntensity = Math.min(1, elapsedTime / fadeDuration);
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                for (let i = persistentWetLines.length - 1; i >= 0; i--) {
+                    const line = persistentWetLines[i];
+                    if (line.update()) {
+                        line.draw();
+                    } else {
+                        persistentWetLines.splice(i, 1);
+                    }
+                }
+
+                fallingDroplets.forEach(drop => {
+                    drop.update();
+                    drop.draw(globalRainIntensity);
+                });
+
+                drips.forEach(drip => {
+                    drip.update();
+                    drip.draw(globalRainIntensity);
+
+                    if (!drip.active && drip.trail.length > 1 && globalRainIntensity > 0.05) {
+                        const startPoint = drip.trail[0];
+                        const endPoint = drip.trail[drip.trail.length - 1];
+                        persistentWetLines.push(new PersistentWetLine(startPoint.x, startPoint.y, endPoint.y, drip.size * 1.0, globalRainIntensity));
+                        drip.reset();
+                    }
+                });
+
+                bokehEffects.forEach(bokeh => {
+                    bokeh.update();
+                    bokeh.draw();
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- Birthday Card Controls Script ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const birthdayCard = document.getElementById('birthday-card');
+            const openBtn = document.getElementById('open-btn');
+            const nextBtn1 = document.getElementById('next-btn-1');
+            const nextBtn2 = document.getElementById('next-btn-2');
+            const closeBtn = document.getElementById('close-btn');
+
+            function setCardState(state) {
+                birthdayCard.setAttribute('data-state', state);
+            }
+
+            if (openBtn) {
+                openBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setCardState('page2');
+                });
+            }
+
+            if (nextBtn1) {
+                nextBtn1.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setCardState('page3');
+                });
+            }
+
+            if (nextBtn2) {
+                nextBtn2.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setCardState('page4');
+                });
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setCardState('closed');
+                    // cardWrapper.style.opacity = '0'; // Removed this line to keep the card visible after closing
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
